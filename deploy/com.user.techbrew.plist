@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.techbrew</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/ABSOLUTE/PATH/TO/techbrew/bin/curator</string>
+        <string>--config</string>
+        <string>/ABSOLUTE/PATH/TO/techbrew/config/sites.yaml</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OPENAI_API_KEY</key>
+        <string>YOUR_API_KEY_HERE</string>
+        <key>OUTPUT_PATH</key>
+        <string>/Users/USER/TechDigest/latest.html</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/USER/TechDigest/logs/curator.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/USER/TechDigest/logs/curator.err</string>
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

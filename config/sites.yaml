@@ -1,0 +1,16 @@
+sources:
+  - name: Qiita
+    url: https://qiita.com/popular-items/feed
+    max_items: 5
+
+  - name: Zenn
+    url: https://zenn.dev/feed
+    max_items: 5
+
+  - name: Hacker News
+    url: https://hnrss.org/frontpage
+    max_items: 5
+
+  - name: Go Blog
+    url: https://go.dev/blog/feed.atom
+    max_items: 5
