@@ -9,7 +9,6 @@
         <string>/ABSOLUTE/PATH/TO/techbrew/bin/curator</string>
         <string>--config</string>
         <string>/ABSOLUTE/PATH/TO/techbrew/config/sites.yaml</string>
-        <string>--no-ai</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>

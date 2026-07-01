@@ -9,7 +9,7 @@ import (
 	"github.com/kushima-takeshi/techbrew/internal/report"
 )
 
-func TestRenderHTML(t *testing.T) {
+func TestRenderHTMLAIEnabled(t *testing.T) {
 	digest := &model.Digest{
 		Topics: []model.Topic{
 			{
@@ -29,18 +29,16 @@ func TestRenderHTML(t *testing.T) {
 		},
 	}
 
-	html, err := report.RenderHTML(digest, false)
+	html, err := report.RenderHTML(digest, report.ModeAIEnabled)
 	if err != nil {
 		t.Fatalf("RenderHTML: %v", err)
 	}
 	for _, want := range []string{
 		"TechBrew ダイジェスト",
 		"AI ピックアップ",
+		"AI 要約は参考情報",
 		"Go 1.23 リリース",
-		"ソース別の記事一覧",
 		"Test Article",
-		"RSS excerpt text",
-		"元記事を読む",
 	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("expected HTML to contain %q", want)
@@ -48,20 +46,30 @@ func TestRenderHTML(t *testing.T) {
 	}
 }
 
-func TestRenderHTMLArticlesOnly(t *testing.T) {
+func TestRenderHTMLRSSOnly(t *testing.T) {
 	digest := report.ArticlesDigest([]model.Article{
 		{Title: "A", URL: "https://a.example", Source: "Qiita", Summary: "summary a"},
-		{Title: "B", URL: "https://b.example", Source: "Zenn", Summary: "summary b"},
 	})
-	html, err := report.RenderHTML(digest, true)
+	html, err := report.RenderHTML(digest, report.ModeRSSOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(html, "AI ピックアップ") {
-		t.Fatal("articles-only mode should not show AI section")
+		t.Fatal("RSS-only mode should not show AI section")
 	}
-	if !strings.Contains(html, "Qiita") || !strings.Contains(html, "summary a") {
-		t.Fatal("expected source group with summary")
+	if !strings.Contains(html, "RSS から取得") {
+		t.Fatal("expected RSS note")
+	}
+}
+
+func TestRenderHTMLAIFailed(t *testing.T) {
+	digest := report.ArticlesDigest([]model.Article{{Title: "A", URL: "https://a.example", Source: "Test"}})
+	html, err := report.RenderHTML(digest, report.ModeAIFailed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(html, "AI 要約に失敗") {
+		t.Fatal("expected AI failed note")
 	}
 }
 
@@ -81,7 +89,7 @@ func TestWriteHTML(t *testing.T) {
 	digest := report.ArticlesDigest([]model.Article{
 		{Title: "T", URL: "https://example.com", Source: "Test"},
 	})
-	if err := report.WriteHTML(path, digest, true); err != nil {
+	if err := report.WriteHTML(path, digest, report.ModeRSSOnly); err != nil {
 		t.Fatalf("WriteHTML: %v", err)
 	}
 }

@@ -18,15 +18,20 @@ import (
 
 func main() {
 	configPath := flag.String("config", "config/sites.yaml", "path to sites YAML config")
-	noAI := flag.Bool("no-ai", false, "skip AI summarization and show RSS articles only")
+	useAI := flag.Bool("ai", false, "opt in: send RSS text to OpenAI for Japanese summary (requires OPENAI_API_KEY)")
+	flag.Bool("no-ai", false, "deprecated: RSS-only is now the default; this flag has no effect")
 	flag.Parse()
 
-	if err := run(*configPath, *noAI); err != nil {
+	if err := run(*configPath, *useAI); err != nil {
 		log.Fatalf("curator: %v", err)
 	}
 }
 
-func run(configPath string, noAI bool) error {
+func run(configPath string, useAI bool) error {
+	if useAI {
+		log.Println("注意: --ai は記事テキストを OpenAI に送信します。API 料金・各サイトの利用条件は利用者自身の責任で確認してください。")
+	}
+
 	log.Println("[1/4] 設定を読み込み中...")
 	cfgPath, err := resolveConfigPath(configPath)
 	if err != nil {
@@ -38,6 +43,11 @@ func run(configPath string, noAI bool) error {
 		return err
 	}
 	envCfg := config.LoadEnv()
+
+	if useAI && envCfg.OpenAIAPIKey == "" {
+		return fmt.Errorf("OPENAI_API_KEY is required when using --ai; omit --ai for RSS-only mode (default)")
+	}
+
 	log.Printf("      ソース %d 件 / 同時接続 %d / 出力先 %s", len(fileCfg.Sources), envCfg.MaxConcurrency, envCfg.OutputPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -51,28 +61,28 @@ func run(configPath string, noAI bool) error {
 	log.Printf("      合計 %d 件取得完了", len(articles))
 
 	var digest *model.Digest
-	fallback := false
+	mode := report.ModeRSSOnly
 
-	if noAI {
-		log.Println("[3/4] AI 要約をスキップ（--no-ai）")
+	if !useAI {
+		log.Println("[3/4] RSS 原文表示（デフォルト）")
 		digest = report.ArticlesDigest(articles)
-		fallback = true
 	} else {
-		log.Println("[3/4] AI 要約を生成中...")
+		log.Println("[3/4] AI 要約を生成中（--ai）...")
 		sum := summarizer.NewOpenAI(envCfg.OpenAIAPIKey, envCfg.OpenAIModel)
 		d, err := sum.Summarize(ctx, articles)
 		if err != nil {
 			log.Printf("      要約失敗 → RSS 原文表示に切替: %v", err)
 			digest = report.ArticlesDigest(articles)
-			fallback = true
+			mode = report.ModeAIFailed
 		} else {
 			log.Printf("      トピック %d 件を生成", len(d.Topics))
 			digest = d
+			mode = report.ModeAIEnabled
 		}
 	}
 
 	log.Println("[4/4] HTML を書き出し中...")
-	if err := report.WriteHTML(envCfg.OutputPath, digest, fallback); err != nil {
+	if err := report.WriteHTML(envCfg.OutputPath, digest, mode); err != nil {
 		return err
 	}
 

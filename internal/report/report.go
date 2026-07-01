@@ -143,8 +143,16 @@ const pageTemplate = `<!DOCTYPE html>
       <span>{{len .SourceGroups}} ソース</span>
     </div>
 
-    {{if .Fallback}}
-    <div class="note">元記事の RSS テキストをそのまま表示しています。全文は各サイトでご覧ください。</div>
+    {{if .ShowRSSNote}}
+    <div class="note">RSS から取得した情報です。全文・正確な内容は各記事の元ページでご確認ください。</div>
+    {{end}}
+
+    {{if .ShowAIFailedNote}}
+    <div class="note">AI 要約に失敗したため、RSS の内容を表示しています。全文は各サイトでご覧ください。</div>
+    {{end}}
+
+    {{if .ShowAIDisclaimer}}
+    <div class="note">以下の AI 要約は参考情報です。内容の正確性は保証されません。必ず元記事をご確認ください。</div>
     {{end}}
 
     {{if .ShowAI}}
@@ -196,22 +204,32 @@ type articleView struct {
 	Published string
 }
 
+type RenderMode int
+
+const (
+	ModeRSSOnly RenderMode = iota
+	ModeAIFailed
+	ModeAIEnabled
+)
+
 type pageData struct {
-	GeneratedAt  string
-	Topics       []model.Topic
-	Articles     []model.Article
-	SourceGroups []sourceGroup
-	Fallback     bool
-	ShowAI       bool
+	GeneratedAt      string
+	Topics           []model.Topic
+	Articles         []model.Article
+	SourceGroups     []sourceGroup
+	ShowRSSNote      bool
+	ShowAIFailedNote bool
+	ShowAIDisclaimer bool
+	ShowAI           bool
 }
 
-func WriteHTML(outputPath string, digest *model.Digest, fallback bool) error {
+func WriteHTML(outputPath string, digest *model.Digest, mode RenderMode) error {
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
 	now := time.Now()
-	html, err := render(digest, fallback, now)
+	html, err := render(digest, mode, now)
 	if err != nil {
 		return err
 	}
@@ -230,24 +248,26 @@ func WriteHTML(outputPath string, digest *model.Digest, fallback bool) error {
 	return nil
 }
 
-func RenderHTML(digest *model.Digest, fallback bool) (string, error) {
-	return render(digest, fallback, time.Now())
+func RenderHTML(digest *model.Digest, mode RenderMode) (string, error) {
+	return render(digest, mode, time.Now())
 }
 
-func render(digest *model.Digest, fallback bool, now time.Time) (string, error) {
+func render(digest *model.Digest, mode RenderMode, now time.Time) (string, error) {
 	tmpl, err := template.New("digest").Parse(pageTemplate)
 	if err != nil {
 		return "", err
 	}
 
-	showAI := !fallback && len(digest.Topics) > 0
+	showAI := mode == ModeAIEnabled && len(digest.Topics) > 0
 	data := pageData{
-		GeneratedAt:  now.Format("2006-01-02 15:04"),
-		Topics:       digest.Topics,
-		Articles:     digest.Articles,
-		SourceGroups: groupBySource(digest.Articles),
-		Fallback:     fallback,
-		ShowAI:       showAI,
+		GeneratedAt:      now.Format("2006-01-02 15:04"),
+		Topics:           digest.Topics,
+		Articles:         digest.Articles,
+		SourceGroups:     groupBySource(digest.Articles),
+		ShowRSSNote:      mode == ModeRSSOnly,
+		ShowAIFailedNote: mode == ModeAIFailed,
+		ShowAIDisclaimer: mode == ModeAIEnabled,
+		ShowAI:           showAI,
 	}
 
 	var buf bytes.Buffer
