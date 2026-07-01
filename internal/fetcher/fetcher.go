@@ -55,9 +55,11 @@ func (f *Fetcher) FetchAll(ctx context.Context, sources []config.Source, maxConc
 
 			fetched, err := f.fetchSource(ctx, s)
 			if err != nil {
-				log.Printf("fetcher: %s failed: %v", s.Name, err)
+				log.Printf("      ✗ %s: %v", s.Name, err)
 				return
 			}
+
+			log.Printf("      ✓ %s: %d 件", s.Name, len(fetched))
 
 			mu.Lock()
 			articles = append(articles, fetched...)
