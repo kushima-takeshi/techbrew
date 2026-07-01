@@ -9,11 +9,10 @@
         <string>/ABSOLUTE/PATH/TO/techbrew/bin/curator</string>
         <string>--config</string>
         <string>/ABSOLUTE/PATH/TO/techbrew/config/sites.yaml</string>
+        <string>--no-ai</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>OPENAI_API_KEY</key>
-        <string>YOUR_API_KEY_HERE</string>
         <key>OUTPUT_PATH</key>
         <string>/Users/USER/TechDigest/latest.html</string>
     </dict>
